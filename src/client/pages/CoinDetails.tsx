@@ -26,14 +26,15 @@ const CoinDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [coin, setCoin] = useState<Coin | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loadingCoin, setLoadingCoin] = useState<boolean>(true)
+  const [loadingHistory, setLoadingHistory] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<HistoryData[]>([])
   const [interval, setInterval] = useState<string>('d1')
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
 
   const loadCoinDetails = useCallback(async () => {
-    setLoading(true)
+    setLoadingCoin(true)
     setError(null)
     try {
       const coinData: Coin = await fetchCoinDetails(id!)
@@ -43,16 +44,15 @@ const CoinDetails: React.FC = () => {
       console.error(err)
       setError('Не удалось загрузить данные о монете.')
     }
-    setLoading(false)
+    setLoadingCoin(false)
   }, [id])
 
   const loadCoinHistory = useCallback(async () => {
-    setLoading(true)
+    setLoadingHistory(true)
     setError(null)
     try {
       const end = Date.now()
       let start
-
       switch (interval) {
         case 'h1':
           start = end - 3600000
@@ -66,7 +66,6 @@ const CoinDetails: React.FC = () => {
         default:
           start = end - 86400000
       }
-
       const historyData: HistoryData[] = await fetchCoinHistory(id!, interval, start, end)
       setHistory(historyData)
       sessionStorage.setItem(`history_${id}_${interval}`, JSON.stringify({ historyData, timestamp: Date.now() }))
@@ -74,18 +73,26 @@ const CoinDetails: React.FC = () => {
       console.error(err)
       setError('Не удалось загрузить историю цен.')
     }
-    setLoading(false)
+    setLoadingHistory(false)
   }, [id, interval])
 
   useEffect(() => {
+    const cacheExpiryTime = 5 * 60 * 1000
+    if (!id) {
+      setError("ID монеты не найден")
+      setLoadingCoin(false)
+      setLoadingHistory(false)
+      return
+    }
+    
     const cachedCoin = sessionStorage.getItem(`coin_${id}`)
     const cachedHistory = sessionStorage.getItem(`history_${id}_${interval}`)
-    const cacheExpiryTime = 5 * 60 * 1000
 
     if (cachedCoin) {
       const { coinData, timestamp } = JSON.parse(cachedCoin)
       if (Date.now() - timestamp < cacheExpiryTime) {
         setCoin(coinData)
+        setLoadingCoin(false)
       } else {
         loadCoinDetails()
       }
@@ -97,6 +104,7 @@ const CoinDetails: React.FC = () => {
       const { historyData, timestamp } = JSON.parse(cachedHistory)
       if (Date.now() - timestamp < cacheExpiryTime) {
         setHistory(historyData)
+        setLoadingHistory(false)
       } else {
         loadCoinHistory()
       }
@@ -114,7 +122,7 @@ const CoinDetails: React.FC = () => {
     setIsModalOpen(true)
   }
 
-  if (loading) return <Spinner />
+  if (loadingCoin || loadingHistory) return <Spinner />
 
   if (error) {
     return (
@@ -127,7 +135,7 @@ const CoinDetails: React.FC = () => {
     )
   }
 
-  if (!coin) return <div className="text-gray-600 text-center mt-4">Монета не найдена.</div>
+  if (!coin) return <div className="text-gray-600 text-center mt-4">Монета не найдена.</div>;
 
   const intervals = [
     { value: 'h1', label: '1 час' },
@@ -176,7 +184,7 @@ const CoinDetails: React.FC = () => {
             </div>
           ))}
         </div>
-        <Chart data={history} />
+        <Chart data={history.length ? history : []} />
       </div>
       <Button
         onClick={handleAddClick} 
@@ -184,7 +192,6 @@ const CoinDetails: React.FC = () => {
       >
         Добавить
       </Button>
-
       {isModalOpen && (
         <BuyCoinModal
           isOpen={isModalOpen}

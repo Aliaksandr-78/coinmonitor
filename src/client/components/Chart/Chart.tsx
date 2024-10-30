@@ -33,7 +33,7 @@ interface HistoryData {
 
 interface ChartProps {
   data: HistoryData[]
-  useLogScale?: boolean // Optional: Toggle for logarithmic scale
+  useLogScale?: boolean 
 }
 
 const Chart: React.FC<ChartProps> = ({ data, useLogScale = false }) => {
