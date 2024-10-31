@@ -25,7 +25,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null
 
   const handleBackgroundClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    // Проверяем, что клик был по элементу с классом background-overlay
     if ((event.target as HTMLElement).classList.contains('background-overlay')) {
       onClose()
     }
@@ -38,7 +37,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
       aria-modal="true"
       onClick={handleBackgroundClick}
     >
-      {/* Добавляем класс для проверки */}
       <div className="absolute inset-0 bg-gray-900 opacity-70 background-overlay"></div>
 
       <div className="relative bg-white text-gray-900 rounded-lg shadow-xl p-6 w-full max-w-md z-10 transition-transform transform-gpu scale-95 animate-modal-fade-in">
